@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Table</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f9f9f9;
+}
+
+h1 {
+    text-align: center;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #4CAF50;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+button, .delete-btn {
+    padding: 8px 12px;
+    margin: 4px;
+    border: none;
+    cursor: pointer;
+}
+
+button.edit-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+a.delete-btn {
+    background-color: #f44336;
+    color: white;
+    text-decoration: none;
+}
+
+.add-btn {
+    background-color: #007BFF;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.add-btn:hover {
+    background-color: #0056b3;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    border-radius: 5px;
+    width: 50%;
+}
+
+.close {
+    color: red;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover, .close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+input[type="text"], input[type="email"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    box-sizing: border-box;
+}
+
+</style>
+
+
+<body>
+    <h1>User Management</h1>
+
+    <!-- Add User Button -->
+    <button id="addUserButton" class="add-btn">Add User</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="userTableBody">
+            <!-- Rows will be inserted by JavaScript -->
+        </tbody>
+    </table>
+
+    <!-- Add User Modal -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add User</h2>
+            <form id="addUserForm">
+                <label for="add-name">Name:</label>
+                <input type="text" id="add-name" required>
+                <label for="add-email">Email:</label>
+                <input type="email" id="add-email" required>
+                <button type="submit">Add User</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Edit User</h2>
+            <form id="editForm">
+                <input type="hidden" name="id" id="edit-id">
+                <label for="name">Name:</label>
+                <input type="text" name="name" id="edit-name" required>
+                <label for="email">Email:</label>
+                <input type="email" name="email" id="edit-email" required>
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <script >
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Sample user data
+    let users = [
+        { id: 1, name: 'John Doe', email: 'john@example.com' },
+        { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
+        { id: 3, name: 'Alice Johnson', email: 'alice@example.com' }
+    ];
+
+    const tableBody = document.getElementById("userTableBody");
+    const modal = document.getElementById("editModal");
+    const addModal = document.getElementById("addModal");
+    const closeModal = document.getElementsByClassName("close");
+
+    // Close Modals
+    Array.from(closeModal).forEach(function(btn) {
+        btn.onclick = function() {
+            modal.style.display = "none";
+            addModal.style.display = "none";
+        };
+    });
+
+    // Close the modal when clicking outside of it
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        } else if (event.target == addModal) {
+            addModal.style.display = "none";
+        }
+    };
+
+    // Populate the table with user data
+    function populateTable() {
+        tableBody.innerHTML = ''; // Clear existing rows
+        users.forEach(user => {
+            const row = document.createElement('tr');
+
+            row.innerHTML = `
+                <td>${user.id}</td>
+                <td>${user.name}</td>
+                <td>${user.email}</td>
+                <td>
+                    <button class="edit-btn" data-id="${user.id}" data-name="${user.name}" data-email="${user.email}">Edit</button>
+                    <button class="delete-btn" data-id="${user.id}">Delete</button>
+                </td>
+            `;
+
+            tableBody.appendChild(row);
+        });
+
+        attachButtonEvents();
+    }
+
+    // Add event listeners to Edit and Delete buttons
+    function attachButtonEvents() {
+        document.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const name = this.getAttribute('data-name');
+                const email = this.getAttribute('data-email');
+
+                // Set modal form values
+                document.getElementById('edit-id').value = id;
+                document.getElementById('edit-name').value = name;
+                document.getElementById('edit-email').value = email;
+
+                // Show the modal
+                modal.style.display = 'block';
+            });
+        });
+
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+
+                // Remove user from the array
+                users = users.filter(user => user.id != id);
+                
+                // Re-populate the table
+                populateTable();
+            });
+        });
+    }
+
+    // Handle form submission for editing user
+    document.getElementById("editForm").addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const id = document.getElementById('edit-id').value;
+        const name = document.getElementById('edit-name').value;
+        const email = document.getElementById('edit-email').value;
+
+        // Find the user by ID and update the values
+        const user = users.find(user => user.id == id);
+        if (user) {
+            user.name = name;
+            user.email = email;
+
+            // Re-populate the table
+            populateTable();
+
+            // Hide the modal
+            modal.style.display = 'none';
+        }
+    });
+
+    // Handle Add User button click
+    document.getElementById("addUserButton").addEventListener('click', function() {
+        addModal.style.display = 'block';
+    });
+
+    // Handle adding a new user
+    document.getElementById("addUserForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        const name = document.getElementById("add-name").value;
+        const email = document.getElementById("add-email").value;
+
+        // Generate a new ID for the user
+        const newId = users.length > 0 ? users[users.length - 1].id + 1 : 1;
+
+        // Add new user to the array
+        users.push({ id: newId, name, email });
+
+        // Re-populate the table
+        populateTable();
+
+        // Clear form fields
+        document.getElementById("add-name").value = '';
+        document.getElementById("add-email").value = '';
+
+        // Close the modal
+        addModal.style.display = 'none';
+    });
+
+    // Initial population of the table
+    populateTable();
+});
+
+
+    </script>
+</body>
+</html>
